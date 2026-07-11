@@ -25,3 +25,11 @@ We are building MedVision AI as a platform, rolling out capabilities over time.
 * **Version 3:** Skin Cancer (Lesion Classification)
 * **Version 4:** Malaria Detection (Blood Smear)
 
+## Key Features
+
+### 1. Image Upload & Preview
+* Drag & Drop interface.
+* Support for JPG, PNG, and JPEG.
+* Image Preview displays resolution and file size.
+* **Image Quality Check:** Warns users if the uploaded image is blurry or low resolution before inference.
+
