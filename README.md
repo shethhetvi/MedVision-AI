@@ -41,3 +41,7 @@ We are building MedVision AI as a platform, rolling out capabilities over time.
 * Visual explanations showing a heatmap of the highlighted infected region.
 * **Original X-ray -> Grad-CAM -> Highlighted Image** to help clinicians trust the model.
 
+### 4. Disease Information Panel
+* Displays Symptoms, Causes, Risk Factors, Recommended Medical Tests, When to consult a doctor, Emergency warning signs, and Treatment overview.
+* Clear disclaimer that it is **not personalized medical advice**.
+
