@@ -45,3 +45,10 @@ We are building MedVision AI as a platform, rolling out capabilities over time.
 * Displays Symptoms, Causes, Risk Factors, Recommended Medical Tests, When to consult a doctor, Emergency warning signs, and Treatment overview.
 * Clear disclaimer that it is **not personalized medical advice**.
 
+### 5. Model Evaluation Metrics
+* Displays Accuracy, Precision, Recall, F1 Score, ROC Curve, and Confusion Matrix.
+
+### 6. PDF Report Generation & Prediction History
+* Downloadable patient reports containing prediction, confidence, date, heatmap, and disease description.
+* Prediction history dashboard to store past diagnoses.
+
