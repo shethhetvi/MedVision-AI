@@ -69,3 +69,13 @@ Rather than training a CNN from scratch, we leverage transfer learning:
 * **Database:** PostgreSQL or SQLite
 * **Deployment:** Docker
 
+## Future Enhancements
+* Multi-disease support (X-ray, MRI, CT, skin lesions)
+* User authentication (Doctor accounts)
+* Cloud deployment & REST API
+* DICOM support
+* AI-powered report generation & PACS integration
+* AI Chatbot for querying disease information
+* Disease Comparison (upload two images)
+* Batch Upload for hospitals
+
