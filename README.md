@@ -52,3 +52,12 @@ We are building MedVision AI as a platform, rolling out capabilities over time.
 * Downloadable patient reports containing prediction, confidence, date, heatmap, and disease description.
 * Prediction history dashboard to store past diagnoses.
 
+### 7. Doctor Dashboard
+* Statistics including Total Images, Today's Diagnoses, Normal vs Positive cases, and Average Confidence.
+
+## AI Models Strategy
+Rather than training a CNN from scratch, we leverage transfer learning:
+* **EfficientNetB0:** High accuracy and fast inference.
+* **DenseNet121:** A favorite in medical imaging research.
+* **ResNet50:** The industry standard.
+
