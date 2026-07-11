@@ -61,3 +61,11 @@ Rather than training a CNN from scratch, we leverage transfer learning:
 * **DenseNet121:** A favorite in medical imaging research.
 * **ResNet50:** The industry standard.
 
+## Tech Stack
+* **Frontend:** Streamlit
+* **Backend:** FastAPI
+* **Deep Learning:** TensorFlow/Keras or PyTorch
+* **Visualization:** Plotly (for evaluation metrics), Grad-CAM
+* **Database:** PostgreSQL or SQLite
+* **Deployment:** Docker
+
