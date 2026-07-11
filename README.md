@@ -13,3 +13,15 @@ Medical image diagnosis often requires specialized expertise and can be time-con
 * Hospitals
 * AI researchers
 
+## Supported Diseases (Staged Release Plan)
+We are building MedVision AI as a platform, rolling out capabilities over time.
+
+### Version 1: Chest X-ray
+* **Classes:** Normal vs Pneumonia
+* **Why:** Large public datasets, straightforward preprocessing, and an excellent starting point for deployment.
+
+### Future Versions
+* **Version 2:** Brain Tumor (MRI)
+* **Version 3:** Skin Cancer (Lesion Classification)
+* **Version 4:** Malaria Detection (Blood Smear)
+
