@@ -33,3 +33,11 @@ We are building MedVision AI as a platform, rolling out capabilities over time.
 * Image Preview displays resolution and file size.
 * **Image Quality Check:** Warns users if the uploaded image is blurry or low resolution before inference.
 
+### 2. AI Prediction & Confidence Score
+* Clear display of predicted class (e.g., Pneumonia).
+* Confidence meter using a progress bar (e.g., 97.4%).
+
+### 3. Explainable AI (Grad-CAM)
+* Visual explanations showing a heatmap of the highlighted infected region.
+* **Original X-ray -> Grad-CAM -> Highlighted Image** to help clinicians trust the model.
+
