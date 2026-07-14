@@ -1,0 +1,21 @@
+from fastapi import APIRouter, UploadFile, File, HTTPException
+import uuid
+import os
+
+router = APIRouter()
+
+UPLOAD_DIR = "data/uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@router.post("/upload/")
+async def upload_image(file: UploadFile = File(...)):
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File provided is not an image.")
+    
+    file_id = str(uuid.uuid4())
+    file_path = os.path.join(UPLOAD_DIR, f"{file_id}_{file.filename}")
+    
+    with open(file_path, "wb") as buffer:
+        buffer.write(await file.read())
+        
+    return {"file_id": file_id, "file_path": file_path, "filename": file.filename}
