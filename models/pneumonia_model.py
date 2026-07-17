@@ -1,4 +1,5 @@
 import tensorflow as tf
+# pyrefly: ignore [missing-import]
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras import layers, models
 
