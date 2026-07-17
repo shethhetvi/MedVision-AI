@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database.db import get_db
-from database.models import PredictionLog
-from backend.predict import predict_pneumonia
+from backend.database.connection import get_db
+from backend.database.models import PredictionLog
+from backend.services.prediction_service import predict_pneumonia
 import time
 
 router = APIRouter()

@@ -1,8 +1,8 @@
 import os
 import tensorflow as tf
-from models.model_loader import load_trained_model
-from gradcam.core import make_gradcam_heatmap
-from gradcam.overlay import save_and_display_gradcam
+from backend.models.loader import load_trained_model
+from backend.gradcam.gradcam import make_gradcam_heatmap
+from backend.gradcam.overlay import save_and_display_gradcam
 
 # Global model variable to hold the loaded model in memory
 MODEL = None

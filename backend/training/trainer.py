@@ -1,8 +1,8 @@
 import os
 import argparse
 import tensorflow as tf
-from training.data_loader import get_dataloaders
-from models.pneumonia_model import build_model
+from backend.training.dataset import get_dataloaders
+from backend.models.architectures.efficientnet import build_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description="MedVision AI - Training Script")

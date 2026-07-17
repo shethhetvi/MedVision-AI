@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
-from database.db import Base
+from backend.database.connection import Base
 from datetime import datetime
 
 class PredictionLog(Base):
