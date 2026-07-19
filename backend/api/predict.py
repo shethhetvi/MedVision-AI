@@ -39,3 +39,8 @@ async def make_prediction(file_id: str, db: Session = Depends(get_db)):
     db.refresh(log_entry)
     
     return {"result": result, "latency_ms": latency}
+
+@router.get("/logs")
+async def get_prediction_logs(limit: int = 10, db: Session = Depends(get_db)):
+    logs = db.query(PredictionLog).order_by(PredictionLog.timestamp.desc()).limit(limit).all()
+    return {"logs": logs}

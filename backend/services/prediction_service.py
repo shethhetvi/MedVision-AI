@@ -40,9 +40,14 @@ def predict_pneumonia(image_path: str):
         init_model()
         
     if MODEL == "DUMMY" or MODEL is None:
+        import hashlib
+        # Use a hash of the image path to consistently predict either Normal or Pneumonia
+        file_hash = int(hashlib.md5(image_path.encode()).hexdigest(), 16)
+        is_pneumonia = file_hash % 2 == 0
+        
         return {
-            "prediction": "Pneumonia",
-            "confidence": 0.99,
+            "prediction": "Pneumonia" if is_pneumonia else "Normal",
+            "confidence": 0.85 + (file_hash % 15) / 100.0, # Random confidence between 0.85 and 0.99
             "model_version": "v1.0.0-dummy",
             "heatmap_path": None
         }

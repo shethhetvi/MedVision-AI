@@ -1,0 +1,84 @@
+# =============================================================================
+# MedVision AI — .gitignore
+# =============================================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# --- Databases ---
+*.db
+*.sqlite3
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+.env/
+
+# --- Environment Variables (secrets) ---
+.env
+*.env
+
+# --- Datasets: ignore all raw images, keep zip files ---
+# Ignore all image formats recursively
+datasets/**/*.jpg
+datasets/**/*.jpeg
+datasets/**/*.png
+datasets/**/*.bmp
+datasets/**/*.tiff
+datasets/**/*.tif
+datasets/**/*.gif
+datasets/**/*.dcm
+
+# Also ignore the big CSV data dumps from skin cancer dataset
+datasets/**/*.csv
+
+# Keep any zip archives (so you can push data references)
+!datasets/**/*.zip
+
+# Ignore macOS metadata folders that Kaggle unzip creates
+datasets/**/__MACOSX/
+
+# --- Trained Model Weights (large binary files) ---
+models/saved/*.h5
+models/saved/*.pb
+models/saved/*.keras
+weights/**/*.h5
+weights/**/*.pb
+weights/**/*.keras
+
+# Keep the directory structure
+!models/saved/.gitkeep
+!weights/**/.gitkeep
+
+# --- Uploaded files (user X-ray uploads at runtime) ---
+data/uploads/
+*.pdf
+
+# --- IDE & OS ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Logs ---
+*.log
+logs/
+
+# --- Jupyter Notebooks checkpoints ---
+.ipynb_checkpoints/
+
+# --- Coverage & testing ---
+.coverage
+htmlcov/
+.pytest_cache/

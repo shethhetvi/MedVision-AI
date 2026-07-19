@@ -7,3 +7,4 @@ tensorflow
 plotly
 opencv-python-headless
 SQLAlchemy
+fpdf2
