@@ -8,11 +8,10 @@ from backend.database.connection import engine, Base
 from backend.database import models
 from backend.services.prediction_service import init_model
 
-# Create database tables
-models.Base.metadata.create_all(bind=engine)
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create database tables
+    models.Base.metadata.create_all(bind=engine)
     # Initialize the ML model on startup
     init_model()
     yield
