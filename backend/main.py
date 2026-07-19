@@ -1,7 +1,28 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="MedVision AI API", version="1.0.0")
+from backend.config import settings
+from backend.api import upload, predict
+from backend.database.connection import engine, Base
+from backend.database import models
+from backend.services.prediction_service import init_model
+
+# Create database tables
+models.Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize the ML model on startup
+    init_model()
+    yield
+    # Clean up on shutdown if needed
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION,
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -11,6 +32,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(upload.router, prefix="/api", tags=["Upload"])
+app.include_router(predict.router, prefix="/api", tags=["Predict"])
+
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to MedVision AI API"}
+    return {"message": f"Welcome to {settings.PROJECT_NAME}"}

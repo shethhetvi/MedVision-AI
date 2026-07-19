@@ -1,5 +1,7 @@
 fastapi
 uvicorn
+python-multipart
+pydantic-settings
 streamlit
 tensorflow
 plotly

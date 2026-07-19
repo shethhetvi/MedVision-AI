@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 from backend.database.connection import get_db
 from backend.database.models import PredictionLog
 from backend.services.prediction_service import predict_pneumonia
+from backend.config import settings
 import time
+import os
+import glob
 
 router = APIRouter()
 
@@ -11,8 +14,11 @@ router = APIRouter()
 async def make_prediction(file_id: str, db: Session = Depends(get_db)):
     start_time = time.time()
     
-    # In a real scenario, fetch file from DB or filesystem using file_id
-    file_path = f"data/uploads/{file_id}"
+    search_pattern = os.path.join(settings.UPLOAD_DIR, f"{file_id}_*")
+    matches = glob.glob(search_pattern)
+    if not matches:
+        raise HTTPException(status_code=404, detail="File not found")
+    file_path = matches[0]
     
     try:
         result = predict_pneumonia(file_path)

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 import uuid
 import os
+from backend.config import settings
 
 router = APIRouter()
 
-UPLOAD_DIR = "data/uploads"
+UPLOAD_DIR = settings.UPLOAD_DIR
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/upload/")
