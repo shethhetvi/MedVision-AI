@@ -3,23 +3,22 @@ import argparse
 import numpy as np
 import tensorflow as tf
 from backend.training.dataset import get_dataloaders
-from backend.models.architectures.efficientnet import build_model
+from backend.models.architectures.efficientnet import build_model, unfreeze_and_compile
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="MedVision AI - Training Script")
-    parser.add_argument("--epochs", type=int, default=15, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training")
-    parser.add_argument("--learning_rate", type=float, default=1e-4, help="Learning rate")
-    # Pointing to the actual train sub-folder from Kaggle dataset
-    parser.add_argument("--data_dir", type=str, default="datasets/pneumonia/chest_xray/train", help="Path to training images (class subfolders)")
-    parser.add_argument("--val_dir", type=str, default="datasets/pneumonia/chest_xray/val", help="Path to val images (class subfolders)")
+    parser = argparse.ArgumentParser(description="MedVision AI - Fine-Tuning Script")
+    parser.add_argument("--stage1_epochs", type=int, default=4, help="Warmup head epochs")
+    parser.add_argument("--stage2_epochs", type=int, default=6, help="Fine-tuning top layers epochs")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
+    parser.add_argument("--unfreeze_layers", type=int, default=40, help="Number of top layers to unfreeze")
+    parser.add_argument("--data_dir", type=str, default="datasets/pneumonia/chest_xray/train", help="Path to dataset")
     parser.add_argument("--model_dir", type=str, default="models/saved", help="Path to save models")
     return parser.parse_args()
 
 def compute_class_weights(data_dir):
     """
-    Compute class weights to handle class imbalance.
-    Assumes subfolders are class names (e.g. NORMAL/, PNEUMONIA/).
+    Compute balanced class weights to handle class imbalance.
+    NORMAL: 1341 (weight ~1.94) vs PNEUMONIA: 3875 (weight ~0.67)
     """
     class_counts = {}
     for cls in sorted(os.listdir(data_dir)):
@@ -38,33 +37,27 @@ def compute_class_weights(data_dir):
 
 def main():
     args = parse_args()
-    print("Starting training process with arguments:")
+    print("Starting 2-Stage MedVision AI Fine-Tuning Process...")
     print(args)
     
     os.makedirs(args.model_dir, exist_ok=True)
     
-    # Load dataset — use separate train and val dirs
-    print("\nLoading datasets...")
-    train_ds, _ = get_dataloaders(args.data_dir, batch_size=args.batch_size)
+    # Load dataset with augmentation for training
+    print("\nLoading datasets with Data Augmentation...")
+    train_ds, val_ds = get_dataloaders(args.data_dir, batch_size=args.batch_size, augment=True)
     
-    # If val_dir exists and has content, use it; otherwise fall back to split
-    if os.path.exists(args.val_dir) and len(os.listdir(args.val_dir)) > 0:
-        # Val folder in Kaggle dataset is tiny (8 images), so let's supplement
-        # by using a 20% split from the train set instead
-        print("Note: Kaggle val set is tiny. Using 20% split from train set for validation.")
-    train_ds, val_ds = get_dataloaders(args.data_dir, batch_size=args.batch_size)
-    
-    # Compute class weights to handle imbalance (NORMAL: 1341 vs PNEUMONIA: 3875)
-    print("\nComputing class weights to handle imbalance:")
+    # Compute balanced class weights
+    print("\nComputing balanced class weights:")
     class_weights = compute_class_weights(args.data_dir)
     
-    # Build model
-    print("\nBuilding model...")
+    # ── STAGE 1: Warmup Classification Head ────────────────────────────────────
+    print("\n" + "="*60)
+    print("  STAGE 1: Training Classification Head (Frozen Base Model)")
+    print("="*60)
     model = build_model()
     
-    # Callbacks
     checkpoint_filepath = os.path.join(args.model_dir, "pneumonia_model_best.h5")
-    model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
         filepath=checkpoint_filepath,
         save_weights_only=False,
         monitor='val_accuracy',
@@ -72,38 +65,49 @@ def main():
         save_best_only=True
     )
     
+    model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=args.stage1_epochs,
+        class_weight=class_weights,
+        callbacks=[checkpoint_callback]
+    )
+    
+    # ── STAGE 2: Fine-Tune Top 40 Layers of Base Model ────────────────────────
+    print("\n" + "="*60)
+    print(f"  STAGE 2: Fine-Tuning Top {args.unfreeze_layers} Layers (lr=1e-5, Focal Loss)")
+    print("="*60)
+    
+    model = unfreeze_and_compile(model, unfreeze_layers=args.unfreeze_layers, learning_rate=1e-5)
+    
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss',
         patience=3,
         restore_best_weights=True
     )
-    
     reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
-        monitor='val_loss', factor=0.2, patience=2, min_lr=1e-6, verbose=1
+        monitor='val_loss', factor=0.5, patience=2, min_lr=1e-6, verbose=1
     )
     
-    # Training loop — pass class_weight to handle imbalance
-    print("\nStarting training loop...")
-    history = model.fit(
+    history_fine = model.fit(
         train_ds,
         validation_data=val_ds,
-        epochs=args.epochs,
+        epochs=args.stage2_epochs,
         class_weight=class_weights,
-        callbacks=[model_checkpoint_callback, early_stopping, reduce_lr]
+        callbacks=[checkpoint_callback, early_stopping, reduce_lr]
     )
     
-    # Also save the final model (not just best checkpoint)
+    # Save final fine-tuned model
     final_path = os.path.join(args.model_dir, "pneumonia_model_final.h5")
     model.save(final_path)
-    print(f"\nTraining complete!")
-    print(f"  Best model (by val_accuracy): {checkpoint_filepath}")
-    print(f"  Final model:                  {final_path}")
+    model.save(checkpoint_filepath)
     
-    # Print final metrics
-    final_acc = history.history['val_accuracy'][-1]
-    best_acc  = max(history.history['val_accuracy'])
-    print(f"\n  Final val_accuracy: {final_acc:.4f}")
-    print(f"  Best  val_accuracy: {best_acc:.4f}")
+    print("\n" + "="*60)
+    print("✅ Fine-Tuning Complete!")
+    print(f"  Best Model Saved to: {checkpoint_filepath}")
+    print(f"  Final Model Saved to: {final_path}")
+    print("="*60)
 
 if __name__ == "__main__":
     main()
+

@@ -87,14 +87,29 @@ test_ds = tf.keras.utils.image_dataset_from_directory(
 AUTOTUNE = tf.data.AUTOTUNE
 test_ds = test_ds.prefetch(buffer_size=AUTOTUNE)
 
-print("\nRunning evaluation on test set...\n")
-metrics, (fpr, tpr, roc_auc) = evaluate_model(model, test_ds)
+print("\nRunning evaluation on test set (threshold = 0.50)...\n")
+metrics, (fpr, tpr, roc_auc) = evaluate_model(model, test_ds, threshold=0.50)
 
-print("-" * 40)
-print(f"  Accuracy:  {metrics['accuracy']  * 100:.2f}%")
-print(f"  Precision: {metrics['precision'] * 100:.2f}%")
-print(f"  Recall:    {metrics['recall']    * 100:.2f}%")
-print(f"  F1-Score:  {metrics['f1']        * 100:.2f}%")
-print(f"  ROC-AUC:   {metrics['roc_auc']   :.4f}")
-print("-" * 40)
+cm = metrics["confusion_matrix"]
+counts = metrics["counts"]
+
+print("-" * 55)
+print("  CONFUSION MATRIX")
+print("-" * 55)
+print(f"                    Pred Normal    Pred Pneumonia")
+print(f"  Actual Normal     {counts['tn']:<14} {counts['fp']:<14}")
+print(f"  Actual Pneumonia  {counts['fn']:<14} {counts['tp']:<14}")
+print("-" * 55)
+print("\n" + "-" * 55)
+print("  CLINICAL EVALUATION METRICS")
+print("-" * 55)
+print(f"  Accuracy:           {metrics['accuracy']    * 100:.2f}%")
+print(f"  Sensitivity (Recall):{metrics['sensitivity'] * 100:.2f}%  (Pneumonia Detection)")
+print(f"  Specificity:        {metrics['specificity'] * 100:.2f}%  (Normal Detection)")
+print(f"  Precision (PPV):    {metrics['precision']   * 100:.2f}%")
+print(f"  NPV:                {metrics['npv']         * 100:.2f}%")
+print(f"  F1-Score:           {metrics['f1']          * 100:.2f}%")
+print(f"  ROC-AUC:            {metrics['roc_auc']     :.4f}")
+print("-" * 55)
 print("\n✅  Evaluation complete!")
+

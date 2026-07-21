@@ -4,9 +4,11 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import plotly.graph_objects as go
 import os
 
-def evaluate_model(model, test_ds):
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_curve, auc, confusion_matrix
+
+def evaluate_model(model, test_ds, threshold=0.5):
     """
-    Evaluates the model and computes key metrics.
+    Evaluates the model and computes comprehensive clinical metrics.
     """
     y_true = []
     y_pred_probs = []
@@ -20,20 +22,36 @@ def evaluate_model(model, test_ds):
     y_pred_probs = np.array(y_pred_probs).squeeze()
     
     # Threshold for binary classification
-    y_pred = (y_pred_probs > 0.5).astype(int)
+    y_pred = (y_pred_probs > threshold).astype(int)
     
-    metrics = {
-        "accuracy": accuracy_score(y_true, y_pred),
-        "precision": precision_score(y_true, y_pred, zero_division=0),
-        "recall": recall_score(y_true, y_pred, zero_division=0),
-        "f1": f1_score(y_true, y_pred, zero_division=0)
-    }
+    cm = confusion_matrix(y_true, y_pred)
+    # cm layout: [[TN, FP], [FN, TP]]
+    tn, fp, fn, tp = cm.ravel()
+    
+    sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0.0  # Recall
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0  # True Negative Rate
+    precision   = tp / (tp + fp) if (tp + fp) > 0 else 0.0  # Positive Predictive Value
+    npv         = tn / (tn + fn) if (tn + fn) > 0 else 0.0  # Negative Predictive Value
+    acc         = (tp + tn) / (tp + tn + fp + fn)
+    f1          = 2 * (precision * sensitivity) / (precision + sensitivity) if (precision + sensitivity) > 0 else 0.0
     
     fpr, tpr, _ = roc_curve(y_true, y_pred_probs)
     roc_auc = auc(fpr, tpr)
-    metrics["roc_auc"] = roc_auc
+    
+    metrics = {
+        "accuracy": float(acc),
+        "sensitivity": float(sensitivity), # Recall / Pneumonia Recall
+        "specificity": float(specificity), # Normal Recall
+        "precision": float(precision),     # PPV
+        "npv": float(npv),                 # Negative Predictive Value
+        "f1": float(f1),
+        "roc_auc": float(roc_auc),
+        "confusion_matrix": cm,
+        "counts": {"tp": int(tp), "tn": int(tn), "fp": int(fp), "fn": int(fn)}
+    }
     
     return metrics, (fpr, tpr, roc_auc)
+
 
 def plot_roc_curve(fpr, tpr, roc_auc, save_path=None):
     """

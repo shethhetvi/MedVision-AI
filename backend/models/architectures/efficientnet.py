@@ -39,7 +39,43 @@ def build_model(input_shape=(224, 224, 3), num_classes=2):
     
     return model
 
+def unfreeze_and_compile(model, unfreeze_layers=40, learning_rate=1e-5):
+    """
+    Unfreezes the top `unfreeze_layers` of the base EfficientNetB0 architecture
+    and re-compiles the model with a small learning rate and BinaryFocalCrossentropy.
+    """
+    try:
+        base_model = model.get_layer("efficientnetb0")
+    except ValueError:
+        # Fallback if layer is named differently
+        base_model = model.layers[1]
+        
+    base_model.trainable = True
+    
+    # Freeze all layers except the last `unfreeze_layers`
+    if unfreeze_layers > 0:
+        for layer in base_model.layers[:-unfreeze_layers]:
+            layer.trainable = False
+            
+    trainable_count = sum([1 for l in base_model.layers if l.trainable])
+    print(f"🔓 Base model un-frozen: {trainable_count} layers set to trainable (last {unfreeze_layers} layers).")
+    
+    # Try BinaryFocalCrossentropy to focus learning on hard/imbalanced examples
+    try:
+        loss_fn = tf.keras.losses.BinaryFocalCrossentropy(gamma=2.0)
+    except AttributeError:
+        loss_fn = 'binary_crossentropy'
+        
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
+        loss=loss_fn,
+        metrics=['accuracy']
+    )
+    return model
+
 if __name__ == "__main__":
-    # Test model creation
+    # Test model creation & unfreezing
     model = build_model()
     model.summary()
+    unfreeze_and_compile(model, unfreeze_layers=40)
+

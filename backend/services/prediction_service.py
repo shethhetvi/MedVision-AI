@@ -24,6 +24,18 @@ def init_model(model_path="models/saved/pneumonia_model_best.h5"):
 # Load model at import time so it's ready before first request
 init_model()
 
+# Warm up the model with a dummy inference to eliminate cold-start latency
+def _warmup_model():
+    global MODEL
+    if MODEL and MODEL != "DUMMY":
+        import numpy as np
+        print("🔥 Warming up model with dummy inference...")
+        dummy = np.zeros((1, 224, 224, 3), dtype=np.float32)
+        MODEL.predict(dummy, verbose=0)
+        print("✅ Model warmed up — ready for fast inference!")
+
+_warmup_model()
+
 def preprocess_image(image_path: str):
     """
     Prepares image for model inference.
@@ -55,9 +67,10 @@ def predict_pneumonia(image_path: str):
     img_array = preprocess_image(image_path)
     
     # Predict
-    preds = MODEL.predict(img_array)
+    preds = MODEL.predict(img_array, verbose=0)
     confidence = float(preds[0][0])
-    is_pneumonia = confidence > 0.5
+    THRESHOLD = 0.50
+    is_pneumonia = confidence > THRESHOLD
     
     # Generate Grad-CAM
     # 'top_activation' lives inside the efficientnetb0 sub-model, not the top-level model.
