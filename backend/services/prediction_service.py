@@ -16,11 +16,13 @@ def init_model(model_path="models/saved/pneumonia_model_best.h5"):
     if MODEL is None:
         try:
             MODEL = load_trained_model(model_path)
-            print("Model loaded successfully.")
+            print(f"✅ Model loaded successfully from {model_path}")
         except Exception as e:
-            print(f"Failed to load model: {e}")
-            # Fallback for dev if no model exists yet
+            print(f"⚠️  Failed to load model: {e}. Falling back to DUMMY mode.")
             MODEL = "DUMMY"
+
+# Load model at import time so it's ready before first request
+init_model()
 
 def preprocess_image(image_path: str):
     """
@@ -41,13 +43,11 @@ def predict_pneumonia(image_path: str):
         
     if MODEL == "DUMMY" or MODEL is None:
         import hashlib
-        # Use a hash of the image path to consistently predict either Normal or Pneumonia
         file_hash = int(hashlib.md5(image_path.encode()).hexdigest(), 16)
         is_pneumonia = file_hash % 2 == 0
-        
         return {
             "prediction": "Pneumonia" if is_pneumonia else "Normal",
-            "confidence": 0.85 + (file_hash % 15) / 100.0, # Random confidence between 0.85 and 0.99
+            "confidence": 0.85 + (file_hash % 15) / 100.0,
             "model_version": "v1.0.0-dummy",
             "heatmap_path": None
         }
@@ -60,12 +60,38 @@ def predict_pneumonia(image_path: str):
     is_pneumonia = confidence > 0.5
     
     # Generate Grad-CAM
-    # Assuming 'top_activation' is the last conv layer in EfficientNetB0
-    last_conv_layer_name = "top_activation"
-    heatmap = make_gradcam_heatmap(img_array, MODEL, last_conv_layer_name)
-    
-    heatmap_path = image_path.replace(".jpg", "_cam.jpg").replace(".png", "_cam.png")
-    save_and_display_gradcam(image_path, heatmap, heatmap_path)
+    # 'top_activation' lives inside the efficientnetb0 sub-model, not the top-level model.
+    # We build a Grad-CAM model by going: inputs -> efficientnetb0 sub-model's last conv -> final output
+    heatmap_path = None
+    try:
+        efficientnet_submodel = MODEL.get_layer("efficientnetb0")
+        # Build a Grad-CAM model that outputs both the inner last conv layer AND the final prediction
+        grad_model = tf.keras.models.Model(
+            inputs=MODEL.inputs,
+            outputs=[
+                efficientnet_submodel.get_layer("top_activation").output,
+                MODEL.output
+            ]
+        )
+        # Compute gradients
+        with tf.GradientTape() as tape:
+            conv_outputs, predictions = grad_model(img_array)
+            loss = predictions[:, 0]
+        grads = tape.gradient(loss, conv_outputs)
+        pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+        conv_outputs = conv_outputs[0]
+        heatmap = conv_outputs @ pooled_grads[..., tf.newaxis]
+        heatmap = tf.squeeze(heatmap)
+        heatmap = tf.maximum(heatmap, 0) / (tf.math.reduce_max(heatmap) + 1e-8)
+        heatmap = heatmap.numpy()
+        
+        # Save overlay — handle all extensions including .jpeg
+        ext = os.path.splitext(image_path)[1]  # e.g. .jpeg, .jpg, .png
+        heatmap_path = image_path.replace(ext, f"_cam{ext}")
+        save_and_display_gradcam(image_path, heatmap, heatmap_path)
+    except Exception as e:
+        print(f"⚠️  Grad-CAM generation failed: {e}. Returning prediction without heatmap.")
+        heatmap_path = None
     
     return {
         "prediction": "Pneumonia" if is_pneumonia else "Normal",
@@ -74,5 +100,3 @@ def predict_pneumonia(image_path: str):
         "heatmap_path": heatmap_path
     }
 
-# Call this on backend startup
-# init_model()
