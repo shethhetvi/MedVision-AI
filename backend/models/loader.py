@@ -10,10 +10,30 @@ def load_trained_model(model_path: str):
         
     print(f"Loading model from {model_path}")
     try:
-        model = tf.keras.models.load_model(model_path)
+        model = tf.keras.models.load_model(model_path, compile=False)
         return model
     except Exception as e:
-        print(f"Error loading model: {e}")
+        print(f"Standard load failed ({e}), attempting config-cleaned load...")
+        if model_path.endswith(".h5"):
+            try:
+                import h5py, json
+                with h5py.File(model_path, 'r+') as f:
+                    if 'model_config' in f.attrs:
+                        config_str = f.attrs['model_config']
+                        if isinstance(config_str, bytes): config_str = config_str.decode('utf-8')
+                        config = json.loads(config_str)
+                        def clean_config(obj):
+                            if isinstance(obj, dict):
+                                for key in ['renorm', 'renorm_clipping', 'renorm_momentum', 'quantization_config']:
+                                    obj.pop(key, None)
+                                for k, v in list(obj.items()): clean_config(v)
+                            elif isinstance(obj, list):
+                                for item in obj: clean_config(item)
+                        clean_config(config)
+                        f.attrs['model_config'] = json.dumps(config).encode('utf-8')
+                return tf.keras.models.load_model(model_path, compile=False)
+            except Exception as e2:
+                print(f"Config-cleaned load also failed: {e2}")
         return None
 
 def save_model(model, save_path: str):
