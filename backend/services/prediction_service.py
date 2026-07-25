@@ -73,23 +73,19 @@ def predict_pneumonia(image_path: str):
     is_pneumonia = confidence > THRESHOLD
     
     # Generate Grad-CAM
-    # 'top_activation' lives inside the efficientnetb0 sub-model, not the top-level model.
-    # We build a Grad-CAM model by going: inputs -> efficientnetb0 sub-model's last conv -> final output
     heatmap_path = None
     try:
-        efficientnet_submodel = MODEL.get_layer("efficientnetb0")
-        # Build a Grad-CAM model that outputs both the inner last conv layer AND the final prediction
-        grad_model = tf.keras.models.Model(
-            inputs=MODEL.inputs,
-            outputs=[
-                efficientnet_submodel.get_layer("top_activation").output,
-                MODEL.output
-            ]
-        )
-        # Compute gradients
+        sub = MODEL.get_layer("efficientnetb0")
+        feat_extractor = tf.keras.models.Model(inputs=sub.inputs, outputs=sub.get_layer("top_activation").output)
+        
         with tf.GradientTape() as tape:
-            conv_outputs, predictions = grad_model(img_array)
+            conv_outputs = feat_extractor(img_array)
+            tape.watch(conv_outputs)
+            x = MODEL.get_layer("global_average_pooling2d")(conv_outputs)
+            x = MODEL.get_layer("dropout")(x)
+            predictions = MODEL.get_layer("dense")(x)
             loss = predictions[:, 0]
+            
         grads = tape.gradient(loss, conv_outputs)
         pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
         conv_outputs = conv_outputs[0]
