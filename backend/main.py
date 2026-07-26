@@ -35,7 +35,6 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 # Create upload dir if not exists so StaticFiles doesn't crash on startup
-# Create upload dir if not exists so StaticFiles doesn't crash on startup
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/static/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="static_uploads")
 
